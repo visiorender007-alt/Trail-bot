@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RestoBot — Démo Assistant IA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --orange: #ff6b2b;
+    --orange-deep: #c94d12;
+    --cream: #fdf6ed;
+    --card: #141414;
+    --border: #222;
+    --muted: #666;
+    --green: #4cd964;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .demo-badge {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    background: var(--orange);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .brand-title { text-align: center; }
+
+  .brand-title h1 {
+    font-family: 'Syne', sans-serif;
+    color: var(--orange);
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .brand-title p {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .platform-tabs {
+    display: flex;
+    gap: 10px;
+  }
+
+  .tab-btn {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #888;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: var(--orange);
+    color: white;
+    border-color: var(--orange);
+  }
+
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    background: #111;
+    border-radius: 36px;
+    border: 2px solid #1e1e1e;
+    box-shadow: 0 40px 80px rgba(255,107,43,0.1), 0 20px 40px rgba(0,0,0,0.7);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 680px;
+  }
+
+  .chat-header {
+    background: #141414;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #1e1e1e;
+    flex-shrink: 0;
+  }
+
+  .back-btn { color: var(--orange); font-size: 20px; line-height: 1; }
+
+  .avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .chat-info { flex: 1; }
+  .chat-info .name { color: #fff; font-size: 15px; font-weight: 600; }
+  .chat-info .status {
+    color: var(--green);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .status-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+
+  .platform-tag {
+    background: #25D366;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #0a0a0a;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 3px; }
+  .messages::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+  .date-sep {
+    text-align: center;
+    color: #444;
+    font-size: 11px;
+    padding: 2px 0;
+    letter-spacing: 1px;
+  }
+
+  .msg-row {
+    display: flex;
+    flex-direction: column;
+    max-width: 84%;
+    animation: fadeUp 0.28s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-row.agent { align-self: flex-start; }
+  .msg-row.user { align-self: flex-end; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+
+  .agent .bubble {
+    background: #1a1a1a;
+    color: var(--cream);
+    border-bottom-left-radius: 4px;
+    border: 1px solid #252525;
+  }
+
+  .user .bubble {
+    background: var(--orange);
+    color: white;
+    border-bottom-right-radius: 4px;
+    font-weight: 500;
+  }
+
+  .msg-meta { font-size: 10px; color: #555; margin-top: 3px; padding: 0 4px; }
+  .agent .msg-meta { text-align: left; }
+  .user .msg-meta { text-align: right; }
+
+  /* Menu card */
+  .menu-card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 6px;
+    max-width: 90%;
+    align-self: flex-start;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .menu-card-header {
+    background: linear-gradient(90deg, var(--orange-deep), var(--orange));
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 14px;
+    border-bottom: 1px solid #222;
+    gap: 12px;
+  }
+
+  .menu-item:last-child { border-bottom: none; }
+
+  .item-name { color: var(--cream); font-size: 13px; }
+  .item-price { color: var(--orange); font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+  /* Typing */
+  .typing-indicator {
+    display: none;
+    align-self: flex-start;
+    background: #1a1a1a;
+    border: 1px solid #252525;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    padding: 12px 16px;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .typing-indicator.visible { display: flex; }
+
+  .dot {
+    width: 7px; height: 7px;
+    background: var(--orange);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* Quick replies */
+  .quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px 4px;
+    background: #0a0a0a;
+    flex-shrink: 0;
+  }
+
+  .qr-btn {
+    background: transparent;
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .qr-btn:hover { background: var(--orange); color: white; }
+
+  /* Input */
+  .input-row {
+    background: #141414;
+    border-top: 1px solid #1e1e1e;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .msg-input {
+    flex: 1;
+    background: #1e1e1e;
+    border: none;
+    border-radius: 22px;
+    padding: 10px 16px;
+    color: var(--cream);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    caret-color: var(--orange);
+  }
+
+  .msg-input::placeholder { color: #444; }
+
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--orange);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { transform: scale(1.08); }
+  .send-btn svg { width: 18px; height: 18px; fill: white; }
+
+  .powered-by { color: #333; font-size: 11px; text-align: center; letter-spacing: 1px; }
+  .powered-by span { color: var(--orange); }
+
+  @media (max-width: 440px) {
+    .phone { border-radius: 24px; height: 600px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-badge">✦ DEMO</div>
+
+<div class="phone-wrap">
+
+  <div class="brand-title">
+    <h1>RestoBot</h1>
+    <p>Assistant IA — Démo Client</p>
+  </div>
+
+  <div class="platform-tabs">
+    <button class="tab-btn active" onclick="switchPlatform('whatsapp', this)">WhatsApp</button>
+    <button class="tab-btn" onclick="switchPlatform('instagram', this)">Instagram</button>
+  </div>
+
+  <div class="phone">
+    <div class="chat-header">
+      <div class="back-btn">‹</div>
+      <div class="avatar">🍽️</div>
+      <div class="chat-info">
+        <div class="name">Saveurs du Cameroun</div>
+        <div class="status"><span class="status-dot"></span> Disponible maintenant</div>
+      </div>
+      <div class="platform-tag" id="platform-label">WA</div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="date-sep">Aujourd'hui</div>
+    </div>
+
+    <div class="typing-indicator" id="typing">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+
+    <div class="quick-replies" id="quick-replies">
+      <button class="qr-btn" onclick="sendQuick(this)">Voir le menu</button>
+      <button class="qr-btn" onclick="sendQuick(this)">Commander</button>
+      <button class="qr-btn" onclick="sendQuick(this)">Livraison</button>
+      <button class="qr-btn" onclick="sendQuick(this)">Réserver une table</button>
+    </div>
+
+    <div class="input-row">
+      <input class="msg-input" id="msg-input" type="text" placeholder="Écrivez un message…" onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="powered-by">Propulsé par <span>VisioRender Studio</span> × IA</div>
+</div>
+
+<script>
+const MENU_ITEMS = [
+  { name: "Ndolé au poulet", price: "3 500 FCFA" },
+  { name: "Eru & waterleaf", price: "3 000 FCFA" },
+  { name: "Poulet DG", price: "4 500 FCFA" },
+  { name: "Koki & plantain", price: "2 500 FCFA" },
+  { name: "Poisson braisé", price: "5 000 FCFA" },
+  { name: "Beignets haricots (5 pcs)", price: "800 FCFA" },
+];
+
+const DRINKS = [
+  { name: "Jus de gingembre", price: "500 FCFA" },
+  { name: "Bissap frais", price: "500 FCFA" },
+  { name: "Eau minérale", price: "300 FCFA" },
+];
+
+const R = {
+  fr: {
+    greet: ["Bonsoir ! 🍽️ Bienvenue chez **Saveurs du Cameroun**.\n\nJe suis votre assistant IA, disponible 7j/7. Pour commander, voir le menu ou réserver une table — je suis là !", "Bonjour ! 👨‍🍳 Chez **Saveurs du Cameroun**, on vous accueille avec le meilleur de la cuisine locale. Comment puis-je vous aider ?"],
+    menu: "SHOW_MENU",
+    commande: "Pour passer votre commande 🛒\n\nDites-moi simplement :\n✅ Le plat choisi\n✅ La quantité\n✅ Livraison ou sur place\n\nJe valide et prépare votre commande immédiatement !",
+    livraison: "🛵 **Livraison disponible !**\n\n📍 Bastos / Melen : 500 FCFA (30 min)\n📍 Centre-ville : 1 000 FCFA (45 min)\n📍 Autres quartiers : 1 500 FCFA (1h)\n\n🕐 Livraisons : 11h – 22h tous les jours\n\nCommande min. 5 000 FCFA = livraison OFFERTE !",
+    reservation: "📅 **Réservation de table**\n\nPour réserver :\n1. Date souhaitée\n2. Heure d'arrivée\n3. Nombre de personnes\n\nNous pouvons accueillir jusqu'à **40 personnes** pour des événements privés ! 🎉",
+    horaires: "🕐 **Horaires :**\n\nLundi – Dimanche : 7h00 – 23h00\n(Ouvert tous les jours, jours fériés inclus)\n\n📍 Carrefour Bastos, Yaoundé\n\nRéservez à l'avance pour les week-ends !",
+    default: ["Merci ! 😊 Je note votre demande et je reviens vers vous dans moins de 2 minutes.", "Bien reçu ! Un membre de notre équipe prend en charge votre demande. ⏱️ Réponse immédiate !"]
+  },
+  en: {
+    greet: ["Good day! 🍽️ Welcome to **Saveurs du Cameroun**.\n\nI'm your AI assistant, available 7 days a week. For orders, the menu or table reservations — I'm here!", "Hello! 👨‍🍳 At **Saveurs du Cameroun**, we serve the best of Cameroonian cuisine. How can I help you?"],
+    menu: "SHOW_MENU",
+    commande: "To place your order 🛒\n\nJust tell me:\n✅ The dish you want\n✅ The quantity\n✅ Delivery or dine-in\n\nI'll confirm and prepare your order right away!",
+    livraison: "🛵 **Delivery available!**\n\n📍 Bastos / Melen: 500 FCFA (30 min)\n📍 City centre: 1,000 FCFA (45 min)\n📍 Other areas: 1,500 FCFA (1hr)\n\n🕐 Delivery: 11 AM – 10 PM daily\n\nOrders over 5,000 FCFA = FREE delivery!",
+    reservation: "📅 **Table reservation**\n\nTo reserve:\n1. Preferred date\n2. Arrival time\n3. Number of guests\n\nWe can host up to **40 people** for private events! 🎉",
+    horaires: "🕐 **Opening hours:**\n\nMonday – Sunday: 7:00 AM – 11:00 PM\n(Open every day, public holidays included)\n\n📍 Carrefour Bastos, Yaoundé\n\nBook ahead for weekends!",
+    default: ["Thanks! 😊 I've noted your request and will get back to you in under 2 minutes.", "Got it! A team member is handling your request right now. ⏱️ Immediate response!"]
+  }
+};
+
+function detectLang(text) {
+  const fr = ['bonjour','bonsoir','salut','merci','oui','non','commander','livraison','menu','plat','table','réserver','heure'];
+  return fr.some(w => text.toLowerCase().includes(w)) ? 'fr' : 'en';
+}
+
+function getIntent(text) {
+  const t = text.toLowerCase();
+  if (['menu','plat','nourriture','manger','eat','food','dish','voir'].some(k=>t.includes(k))) return 'menu';
+  if (['command','order','acheter','buy','prend','veux','want'].some(k=>t.includes(k))) return 'commande';
+  if (['livr','deliver','ship','envoyer','send'].some(k=>t.includes(k))) return 'livraison';
+  if (['réserv','book','table','place','event'].some(k=>t.includes(k))) return 'reservation';
+  if (['heure','horaire','ouvert','open','time','quand','when','close'].some(k=>t.includes(k))) return 'horaires';
+  return 'default';
+}
+
+function formatBubble(text) {
+  return text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+}
+
+function addMessage(text, role) {
+  const msgs = document.getElementById('messages');
+  const t = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  if (text === 'SHOW_MENU') { addMenuCard(); return; }
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+  row.innerHTML = `<div class="bubble">${formatBubble(text)}</div><div class="msg-meta">${t}${role==='user'?' ✓✓':''}</div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addMenuCard() {
+  const msgs = document.getElementById('messages');
+  const card = document.createElement('div');
+  card.className = 'menu-card';
+  card.innerHTML = `<div class="menu-card-header">🍽️ Menu du jour</div>
+    ${MENU_ITEMS.map(i=>`<div class="menu-item"><span class="item-name">${i.name}</span><span class="item-price">${i.price}</span></div>`).join('')}
+    <div class="menu-card-header" style="background:#1a1a1a;color:#ff6b2b;font-size:11px;">🥤 Boissons</div>
+    ${DRINKS.map(i=>`<div class="menu-item"><span class="item-name">${i.name}</span><span class="item-price">${i.price}</span></div>`).join('')}`;
+  msgs.appendChild(card);
+  const t = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const meta = document.createElement('div');
+  meta.className='msg-meta';meta.style.fontSize='10px';meta.style.color='#555';meta.style.padding='3px 4px';
+  meta.textContent = t;
+  msgs.appendChild(meta);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  setTimeout(() => {
+    addMessage('Qu\'est-ce qui vous fait envie ? 😋 Dites-moi et je prépare votre commande !', 'agent');
+  }, 800);
+}
+
+function showTyping() { document.getElementById('typing').classList.add('visible'); document.getElementById('messages').scrollTop = 99999; }
+function hideTyping() { document.getElementById('typing').classList.remove('visible'); }
+
+function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addMessage(text, 'user');
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    const lang = detectLang(text);
+    const intent = getIntent(text);
+    const r = R[lang];
+    let reply;
+    if (intent === 'default') {
+      const arr = r.default;
+      reply = arr[Math.floor(Math.random()*arr.length)];
+    } else if (intent === 'greet') {
+      reply = r.greet[0];
+    } else {
+      reply = r[intent];
+    }
+    addMessage(reply || r.default[0], 'agent');
+  }, 1200 + Math.random()*600);
+}
+
+function sendQuick(btn) {
+  document.getElementById('msg-input').value = btn.textContent;
+  sendMessage();
+}
+
+function switchPlatform(p, el) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const label = document.getElementById('platform-label');
+  if (p === 'instagram') {
+    label.textContent = 'IG';
+    label.style.background = 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)';
+  } else {
+    label.textContent = 'WA';
+    label.style.background = '#25D366';
+  }
+}
+
+// Greet on load
+setTimeout(()=>{
+  showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    addMessage(R.fr.greet[0], 'agent');
+  }, 1400);
+}, 500);
+</script>
+</body>
+</html>
